@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Graphic Design Quiz</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f7fc;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Fixed Navbar */
+        header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background-color: #3f038f;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            font-size: 24px;
+            z-index: 1000;
+        }
+
+        /* Timer styling under the navbar */
+        .timer {
+            text-align: right;
+            font-size: 18px;
+            margin: 20px 20px;
+            color: #333;
+        }
+
+        /* Center the quiz container with padding */
+        .quiz-container {
+            padding: 20px;
+            margin: 0 auto;
+            width: 70%;
+            max-width: 900px;
+            margin-top: 100px; /* Space for fixed navbar */
+        }
+
+        .question-container {
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            padding: 15px;
+        }
+
+        .question-container p {
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .question-container input[type="radio"] {
+            margin-right: 10px;
+        }
+
+        button {
+            background-color: #3f038f;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #5e0cbe;
+        }
+
+        .result-popup, .answer-page {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 30px;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            z-index: 999;
+            width: 80%;
+            max-width: 500px;
+        }
+
+        .result-popup h2, .answer-page h2 {
+            margin-bottom: 20px;
+        }
+
+        .answer-page p {
+            text-align: left;
+            margin: 10px 0;
+            padding: 5px;
+            background-color: #f1f1f1;
+            border-radius: 5px;
+        }
+
+        .correct-answer {
+            color: #4caf50;
+        }
+
+        .incorrect-answer {
+            color: #f44336;
+        }
+
+        .highlight {
+            background-color: #ffeb3b;
+        }
+
+        .highlight-btn {
+            background-color: #ff5722;
+        }
+
+        .form-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .form-box {
+            background-color: white;
+            padding: 20px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            width: 300px; /* Set fixed width for form popup */
+            position: absolute;
+            top: 50%;
+            left:50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .form-box input {
+            margin-bottom: 10px;
+            padding: 8px;
+            width: 100%;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+
+        .form-box button {
+            width: 100%;
+            padding: 10px;
+        }
+
+        .pie-chart-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            height: 250px;
+            margin: 20px 0;
+        }
+
+        .result-info {
+            margin-bottom: 20px;
+        }
+
+        .score-percentage {
+            font-size: 20px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .time-taken {
+            font-size: 16px;
+            color: #555;
+        }
+
+        /* Adjusting for better positioning of the form */
+        .form-box input, .form-box button {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <header>Parts of Speech</header>
+
+    <!-- Popup to collect student details -->
+    <div id="student-popup" class="form-container">
+        <div class="form-box">
+            <h2>Enter Your Details</h2>
+            <form id="student-form">
+                <input type="text" id="student-name" placeholder="Name" required>
+                <input type="text" id="student-roll" placeholder="Roll Number" required>
+                <button type="submit">Start Quiz</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Quiz Section -->
+    <div class="quiz-container" style="display:none;">
+        <div class="timer" id="timer">Time Left: 10:00</div>
+
+        <div id="quiz-content"></div>
+
+        <button onclick="submitQuiz()">Submit Quiz</button>
+    </div>
+
+    <!-- Result Popup -->
+    <div id="result-popup" class="result-popup">
+        <h2>Your Result, <span id="student-name-result"></span></h2>
+        <div class="result-info">
+            <p id="result-msg"></p>
+            <p class="score-percentage" id="score-percentage"></p>
+            <p class="time-taken" id="time-taken"></p>
+        </div>
+        <div class="pie-chart-container">
+            <canvas id="result-pie-chart"></canvas>
+        </div>
+        <button onclick="showAnswers()">Show Correct Answers</button>
+        <button class="highlight-btn" onclick="retakeQuiz()">Retest</button>
+    </div>
+
+    <!-- Answer Review Page -->
+    <div id="answer-page" class="answer-page">
+        <h2>Correct Answers</h2>
+        <div id="answers-list"></div>
+        <button onclick="closeAnswers()">Close</button>
+    </div>
+
+    <script>
+        // Timer Setup
+        let timeLeft = 10 * 60; // 20 minutes in seconds
+        let timer;
+        let startTime;
+
+        function startTimer() {
+            startTime = Date.now();
+            timer = setInterval(() => {
+                timeLeft--;
+                let minutes = Math.floor(timeLeft / 60);
+                let seconds = timeLeft % 60;
+                document.getElementById("timer").textContent = `Time Left: ${minutes}:${seconds < 10 ? '0' + seconds : seconds}`;
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    alert("Time's up!");
+                    submitQuiz();
+                }
+            }, 1000);
+        }
+
+        // Dynamic Quiz Content
+        const questions = [
+        {
+        question: "Which part of speech describes an action or state of being?",
+        options: ["Noun", "Verb", "Adjective", "Preposition"],
+        correct: 1
+    },
+    {
+        question: "Which of the following is an adjective?",
+        options: ["Beautiful", "Quickly", "Sing", "Under"],
+        correct: 0
+    },
+    {
+        question: "Identify the noun in the sentence: 'The cat slept under the table.'",
+        options: ["Slept", "Cat", "Under", "The"],
+        correct: 1
+    },
+    {
+        question: "Which part of speech connects words, phrases, or clauses?",
+        options: ["Pronoun", "Adverb", "Conjunction", "Interjection"],
+        correct: 2
+    },
+    {
+        question: "Which of the following words is a pronoun?",
+        options: ["Quickly", "She", "Happy", "Swim"],
+        correct: 1
+    },
+    {
+        question: "Which word is an adverb in the sentence: 'She sings beautifully'?",
+        options: ["She", "Sings", "Beautifully", "The"],
+        correct: 2
+    },
+    {
+        question: "Identify the preposition in this sentence: 'The book is on the table.'",
+        options: ["Book", "Is", "On", "Table"],
+        correct: 2
+    },
+    {
+        question: "'Wow! That was amazing!' – Which part of speech is 'Wow'?",
+        options: ["Noun", "Verb", "Interjection", "Adverb"],
+        correct: 2
+    },
+    {
+        question: "Which sentence contains a conjunction?",
+        options: ["He ran quickly.", "She is smart but lazy.", "The dog barked.", "Wow, that’s great!"],
+        correct: 1
+    },
+    {
+        question: "Which word is a noun in this sentence? 'Riya bought a new dress.'",
+        options: ["Bought", "New", "Dress", "A"],
+        correct: 2
+    },
+    {
+        question: "Which sentence contains an adverb?",
+        options: ["She danced gracefully.", "The car is blue.", "They are my friends.", "He is a doctor."],
+        correct: 0
+    },
+    {
+        question: "What is the correct part of speech for 'and' in the sentence: 'He likes tea and coffee'?",
+        options: ["Pronoun", "Preposition", "Conjunction", "Adjective"],
+        correct: 2
+    },
+    {
+        question: "Identify the verb in the sentence: 'John plays football every Sunday.'",
+        options: ["John", "Plays", "Football", "Sunday"],
+        correct: 1
+    },
+    {
+        question: "'That' in 'That book is mine' is a:",
+        options: ["Pronoun", "Adjective", "Adverb", "Conjunction"],
+        correct: 1
+    },
+    {
+        question: "Which of the following is an example of an interjection?",
+        options: ["However", "Ouch!", "Above", "Dance"],
+        correct: 1
+    },
+    {
+        question: "Identify the pronoun in this sentence: 'They went to the park.'",
+        options: ["Went", "Park", "To", "They"],
+        correct: 3
+    },
+    {
+        question: "In the sentence 'She wore a red dress,' the word 'red' is:",
+        options: ["Noun", "Adverb", "Adjective", "Verb"],
+        correct: 2
+    },
+    {
+        question: "Which of the following is a verb?",
+        options: ["Jump", "Chair", "Happy", "Quickly"],
+        correct: 0
+    },
+    {
+        question: "'During' in 'During the storm, we stayed inside' is a:",
+        options: ["Adverb", "Preposition", "Noun", "Verb"],
+        correct: 1
+    },
+    {
+        question: "What is the function of 'very' in 'She is very happy'?",
+        options: ["Verb", "Noun", "Adverb", "Preposition"],
+        correct: 2
+    },
+    {
+        question: "Identify the noun in this sentence: 'Children love ice cream.'",
+        options: ["Love", "Ice cream", "Children", "Both B & C"],
+        correct: 3
+    },
+    {
+        question: "Which part of speech is 'loudly' in 'The baby cried loudly'?",
+        options: ["Adverb", "Noun", "Verb", "Pronoun"],
+        correct: 0
+    },
+    {
+        question: "Which sentence contains a preposition?",
+        options: ["He is running fast.", "She went to the market.", "Wow! That’s amazing.", "The sky is blue."],
+        correct: 1
+    },
+    {
+        question: "'Slow' in 'She is a slow runner' is a:",
+        options: ["Adjective", "Adverb", "Noun", "Preposition"],
+        correct: 0
+    },
+    {
+        question: "Which part of speech is the word 'quickly' in the sentence 'He finished the work quickly'?",
+        options: ["Verb", "Adverb", "Noun", "Pronoun"],
+        correct: 1
+    }
+        ];
+
+// Load Quiz Again
+
+function loadQuiz() {
+    const quizContent = document.getElementById("quiz-content");
+    quizContent.innerHTML = ""; // Clear previous questions
+    questions.forEach((q, index) => {
+        let questionHTML = `
+            <div class="question-container">
+                <p>${index + 1}. ${q.question}</p>
+                ${q.options.map((option, i) => 
+                    `<input type="radio" name="q${index}" value="${i}" id="q${index}-opt${i}"> 
+                    <label for="q${index}-opt${i}">${option}</label><br>`
+                ).join('')}
+            </div>`;
+        quizContent.innerHTML += questionHTML;
+    });
+}
+
+
+        function submitQuiz() {
+            clearInterval(timer);
+            let score = 0;
+            const answers = [];
+            questions.forEach((q, index) => {
+                const selectedAnswer = document.querySelector(`input[name="q${index}"]:checked`);
+                const correctAnswer = q.correct;
+                const userAnswer = selectedAnswer ? parseInt(selectedAnswer.value) : null;
+                answers.push({
+                    correct: q.options[correctAnswer],
+                    selected: userAnswer !== null ? q.options[userAnswer] : null
+                });
+                if (userAnswer === correctAnswer) score++;
+            });
+
+            const totalQuestions = questions.length;
+            const percentage = Math.round((score / totalQuestions) * 100);
+
+            // Displaying results
+            document.getElementById("student-name-result").textContent = document.getElementById("student-name").value;
+            document.getElementById("result-msg").textContent = `You answered ${score} out of ${totalQuestions} questions correctly.`;
+            document.getElementById("score-percentage").textContent = `Your score: ${percentage}%`;
+            document.getElementById("time-taken").textContent = `Time taken: ${Math.floor((Date.now() - startTime) / 1000)} seconds`;
+
+            // Displaying the Pie Chart
+            const ctx = document.getElementById('result-pie-chart').getContext('2d');
+            const resultPieChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: ['Correct', 'Incorrect'],
+                    datasets: [{
+                        label: 'Quiz Result',
+                        data: [score, totalQuestions - score],
+                        backgroundColor: ['#4caf50', '#f44336'],
+                    }]
+                }
+            });
+
+            // Show the result popup
+            document.getElementById("result-popup").style.display = 'block';
+        }
+
+        function showAnswers() {
+            const answersList = document.getElementById("answers-list");
+            answersList.innerHTML = '';
+            questions.forEach((q, index) => {
+                const answerHTML = `
+                    <p>${index + 1}. <strong>Correct Answer:</strong> ${q.options[q.correct]} <br>
+                    <strong>Your Answer:</strong> ${answers[index].selected || 'None'}</p>`;
+                answersList.innerHTML += answerHTML;
+            });
+            document.getElementById("answer-page").style.display = 'block';
+        }
+
+        function closeAnswers() {
+            document.getElementById("answer-page").style.display = 'none';
+        }
+
+        function retakeQuiz() {
+            document.getElementById("result-popup").style.display = 'none';
+            document.getElementById("student-popup").style.display = 'block';
+            document.getElementById("quiz-content").style.display = 'none';
+            timeLeft = 20 * 60;
+        }
+
+        // Show student form popup at the start
+        document.getElementById("student-popup").style.display = 'block';
+
+        // Start the quiz when student form is submitted
+        document.getElementById("student-form").addEventListener("submit", function (e) {
+            e.preventDefault();
+            document.getElementById("student-popup").style.display = 'none';
+            document.querySelector(".quiz-container").style.display = 'block';
+            startTimer();
+            loadQuiz();
+        });
+    </script>
+</body>
+</html>
